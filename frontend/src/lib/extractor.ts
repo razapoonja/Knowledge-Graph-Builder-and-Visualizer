@@ -20,3 +20,13 @@ export async function extractFromText(text: string, docClass = 'resume'): Promis
 
     return data
   }
+
+export async function queryDocument(question: string): Promise<string> {
+    const { data } = await extractor.post('/query', { question })
+
+    if (typeof data === 'string') return data
+    if (data?.answer) return String(data.answer)
+
+    return JSON.stringify(data)
+}
+  

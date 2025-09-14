@@ -3,12 +3,14 @@ import { useGraphStore } from './store/useGraphStore'
 import GraphView from './components/GraphView'
 import PropertiesPanel from './components/PropertiesPanel'
 import ImportPanel from './components/ImportPanel'
+import DocChat from './components/DocChat'
 
 export default function App() {
     const load = useGraphStore(s => s.load)
     const setSearch = useGraphStore(s => s.setSearch)
     const search = useGraphStore(s => s.search)
     const [showImport, setShowImport] = useState(false)
+    const [showChat, setShowChat] = useState(false)
 
     useEffect(() => { load() }, [load])
 
@@ -28,10 +30,15 @@ export default function App() {
                     <button onClick={() => setShowImport(true)} className="ml-auto rounded-md border px-3 py-2">
                         Import
                     </button>
+
+                    <button onClick={() => setShowChat(true)} className="rounded-md border px-3 py-2">
+                        Chat
+                    </button>
                 </div>
 
                 <GraphView />
                 {showImport && <ImportPanel onClose={() => setShowImport(false)} />}
+                {showChat && <DocChat onClose={() => setShowChat(false)} />}
             </div>
 
             <div className="border-l bg-white">

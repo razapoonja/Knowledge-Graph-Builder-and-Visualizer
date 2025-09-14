@@ -53,6 +53,12 @@ class ExtractTextRequest(BaseModel):
     text: str
     doc_class: str = "resume"
 
+class QueryRequest(BaseModel):
+    question: str
+
+class QueryResponse(BaseModel):
+    answer: str
+
 llm = ChatOpenAI(model="gpt-4o", temperature=0.1)
 parser = PydanticOutputParser(pydantic_object=NodesSchema)
 
@@ -200,8 +206,9 @@ async def extract_from_text(payload: ExtractTextRequest):
     )
 
 @app.post("/query")
-async def query_document_endpoint(question: str):
-    return query_document(question)
+async def query_document_endpoint(payload: QueryRequest):
+    answer = query_document(payload.question)
+    return {"answer": answer}
 
 
 if __name__ == "__main__":
