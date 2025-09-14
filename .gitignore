@@ -1,0 +1,38 @@
+# ----------------
+# Editors and IDEs
+# ----------------
+.vscode/
+
+# ----------------
+# Env and secrets
+# ----------------
+**/.env
+
+# ----------------
+# Logs
+# ----------------
+logs/
+**/*.log
+npm-debug.log*
+
+# ----------------
+# Node and web build outputs
+# ----------------
+**/node_modules/
+**/dist/
+**/build/
+
+# ----------------
+# Python
+# ----------------
+**/__pycache__/
+**/.venv/
+**/venv/
+**/env/
+
+# ----------------
+# Docker and containers
+# ----------------
+**/.docker/
+**/tmp/
+**/docker-temp/
