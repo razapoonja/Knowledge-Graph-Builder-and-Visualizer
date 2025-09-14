@@ -21,6 +21,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
 
 from prompt import prompt_template
+from helpers import assert_valid_pdf
 
 load_dotenv()
 
@@ -159,24 +160,21 @@ async def root():
 
 @app.post("/extract", response_model=KnowledgeGraphResponse)
 async def extract_knowledge_graph_and_create_embeddings(file: UploadFile = File(...)):
-    if not file.filename.lower().endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    content = await file.read()
+    assert_valid_pdf(file, content)
     
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
         try:
-            content = await file.read()
             temp_file.write(content)
             temp_file.flush()
-            
+
             text = extract_text_from_pdf(temp_file.name)
-            
             if not text.strip():
                 raise HTTPException(status_code=400, detail="No text could be extracted from the PDF")
-            
-            result = process_document(text)
 
+            result = process_document(text)
             create_embeddings(temp_file.name)
-            
+
             return result
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
