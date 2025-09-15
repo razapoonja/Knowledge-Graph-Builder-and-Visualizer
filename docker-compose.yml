@@ -2,6 +2,12 @@ version: "3.9"
 
 services:
   backend:
+    user: "1000:1000"
+    read_only: true
+    tmpfs: ["/tmp"]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
     build: ./backend
     container_name: backend
     environment:
@@ -13,6 +19,12 @@ services:
     restart: unless-stopped
 
   llm:
+    user: "1000:1000"
+    read_only: true
+    tmpfs: ["/tmp"]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
     build: ./llm
     container_name: llm
     environment:
@@ -23,6 +35,12 @@ services:
     restart: unless-stopped
 
   frontend:
+    user: "1000:1000"
+    read_only: true
+    tmpfs: ["/tmp"]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
     build:
       context: ./frontend
     container_name: frontend
