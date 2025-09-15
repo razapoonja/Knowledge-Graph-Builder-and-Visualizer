@@ -5,11 +5,15 @@ import { connect } from "./db.js"
 import graphRoutes from "./routes/graph.js"
 import { applySecurity } from "./security.js"
 import importRoutes from "./routes/import.js";
+import client from "prom-client";
 
 const app = express()
 app.set("trust proxy", 1)
 
 applySecurity(app)
+
+const register = new client.Registry();
+client.collectDefaultMetrics({ register });
 
 app.use(express.json({ limit: "100kb" }))
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"))
@@ -32,3 +36,8 @@ connect(MONGO_URI).then(() => {
     console.error("Mongo error", err)
     process.exit(1)
 })
+
+app.get("/metrics", async (_req, res) => {
+    res.set("Content-Type", register.contentType);
+    res.end(await register.metrics());
+});

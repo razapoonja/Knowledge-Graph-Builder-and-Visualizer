@@ -20,6 +20,8 @@ from langchain_core.exceptions import OutputParserException
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
 
+from prometheus_fastapi_instrumentator import Instrumentator
+
 from prompt import prompt_template
 from helpers import assert_valid_pdf
 
@@ -34,6 +36,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 class ContentSchema(BaseModel):
     labels: list[str] = Field(default=[], description="The list of labels in the resume")

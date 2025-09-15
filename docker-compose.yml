@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    container_name: backend
+    environment:
+      - PORT=4000
+      - CORS_ORIGIN=http://localhost:5173,http://frontend:5173
+      - MONGO_URI=${MONGO_URI}
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+
+  llm:
+    build: ./llm
+    container_name: llm
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MONGO_URI=${MONGO_URI}
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    environment:
+      - VITE_API_URL=http://backend:4000
+      - VITE_EXTRACTOR_URL=http://llm:8000
+      - PORT=5173
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+      - llm
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - backend
+      - llm
+      - frontend
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.1.4
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  grafana_data:

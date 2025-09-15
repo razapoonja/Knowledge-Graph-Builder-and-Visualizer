@@ -1,0 +1,216 @@
+{
+    "title": "DepoIQ – Overview Dashboard",
+    "uid": "depoiq-overview",
+    "schemaVersion": 39,
+    "version": 1,
+    "tags": ["depoiq", "overview", "prometheus"],
+    "timezone": "browser",
+    "refresh": "10s",
+    "style": "dark",
+    "time": { "from": "now-6h", "to": "now" },
+    "templating": {
+      "list": [
+        {
+          "name": "job",
+          "type": "query",
+          "datasource": "Prometheus",
+          "refresh": 1,
+          "query": "label_values(up, job)",
+          "multi": true,
+          "includeAll": true,
+          "allValue": ".*",
+          "current": {}
+        }
+      ]
+    },
+    "panels": [
+      {
+        "type": "stat",
+        "title": "Overall RPS",
+        "id": 1,
+        "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          { "expr": "sum(rate(http_requests_total{job=\"llm\"}[$__rate_interval]))" },
+          { "expr": "sum(rate(http_request_duration_seconds_count{job=\"backend\"}[$__rate_interval]))" },
+          { "expr": "sum(rate(http_request_duration_seconds_count{job=\"frontend\"}[$__rate_interval]))" }
+        ],
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"], "values": false }, "colorMode": "value" },
+        "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] }
+      },
+      {
+        "type": "stat",
+        "title": "Overall Error Rate (%)",
+        "id": 2,
+        "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "100 * ( sum(rate(http_requests_total{job=\"llm\",status=~\"5..\"}[$__rate_interval])) + sum(rate(http_request_duration_seconds_count{job=~\"backend|frontend\",code=~\"5..\"}[$__rate_interval])) ) / clamp_min( sum(rate(http_requests_total{job=\"llm\"}[$__rate_interval])) + sum(rate(http_request_duration_seconds_count{job=~\"backend|frontend\"}[$__rate_interval])), 1e-9)"
+          }
+        ],
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"], "values": false }, "colorMode": "value" },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": { "mode": "absolute", "steps": [ { "color": "green" }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 } ] }
+          },
+          "overrides": []
+        }
+      },
+      {
+        "type": "stat",
+        "title": "Backend p95 (ms)",
+        "id": 3,
+        "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+        "targets": [
+          { "expr": "1000 * histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"backend\"}[$__rate_interval])) by (le))" }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": { "mode": "absolute", "steps": [ { "color": "green" }, { "color": "yellow", "value": 300 }, { "color": "red", "value": 800 } ] }
+          },
+          "overrides": []
+        }
+      },
+      {
+        "type": "stat",
+        "title": "LLM p95 (ms)",
+        "id": 4,
+        "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+        "targets": [
+          { "expr": "1000 * histogram_quantile(0.95, sum(rate(http_request_duration_highr_seconds_bucket{job=\"llm\"}[$__rate_interval])) by (le))" }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": { "mode": "absolute", "steps": [ { "color": "green" }, { "color": "yellow", "value": 400 }, { "color": "red", "value": 1200 } ] }
+          },
+          "overrides": []
+        }
+      },
+      {
+        "type": "stat",
+        "title": "Frontend p95 (ms)",
+        "id": 5,
+        "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+        "targets": [
+          { "expr": "1000 * histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"frontend\"}[$__rate_interval])) by (le))" }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": { "mode": "absolute", "steps": [ { "color": "green" }, { "color": "yellow", "value": 150 }, { "color": "red", "value": 400 } ] }
+          },
+          "overrides": []
+        }
+      },
+  
+      {
+        "type": "timeseries",
+        "title": "Requests / sec by service",
+        "id": 6,
+        "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+        "targets": [
+          { "expr": "sum(rate(http_requests_total{job=\"llm\"}[$__rate_interval]))", "legendFormat": "llm" },
+          { "expr": "sum(rate(http_request_duration_seconds_count{job=\"backend\"}[$__rate_interval]))", "legendFormat": "backend" },
+          { "expr": "sum(rate(http_request_duration_seconds_count{job=\"frontend\"}[$__rate_interval]))", "legendFormat": "frontend" }
+        ],
+        "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "lineWidth": 2 } } }
+      },
+      {
+        "type": "timeseries",
+        "title": "p95 latency (ms) by service",
+        "id": 7,
+        "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+        "targets": [
+          { "expr": "1000 * histogram_quantile(0.95, sum(rate(http_request_duration_highr_seconds_bucket{job=\"llm\"}[$__rate_interval])) by (le))", "legendFormat": "llm" },
+          { "expr": "1000 * histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"backend\"}[$__rate_interval])) by (le))", "legendFormat": "backend" },
+          { "expr": "1000 * histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"frontend\"}[$__rate_interval])) by (le))", "legendFormat": "frontend" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "lineWidth": 2 } } }
+      },
+  
+      {
+        "type": "bargauge",
+        "title": "Error rate by service (%)",
+        "id": 8,
+        "gridPos": { "x": 0, "y": 12, "w": 12, "h": 6 },
+        "targets": [
+          { "expr": "100 * sum(rate(http_requests_total{job=\"llm\",status=~\"5..\"}[$__rate_interval])) / clamp_min(sum(rate(http_requests_total{job=\"llm\"}[$__rate_interval])), 1e-9)", "legendFormat": "llm" },
+          { "expr": "100 * sum(rate(http_request_duration_seconds_count{job=\"backend\",code=~\"5..\"}[$__rate_interval])) / clamp_min(sum(rate(http_request_duration_seconds_count{job=\"backend\"}[$__rate_interval])), 1e-9)", "legendFormat": "backend" },
+          { "expr": "100 * sum(rate(http_request_duration_seconds_count{job=\"frontend\",code=~\"5..\"}[$__rate_interval])) / clamp_min(sum(rate(http_request_duration_seconds_count{job=\"frontend\"}[$__rate_interval])), 1e-9)", "legendFormat": "frontend" }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": { "mode": "absolute", "steps": [ { "color": "green" }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 } ] }
+          },
+          "overrides": []
+        }
+      },
+  
+      {
+        "type": "heatmap",
+        "title": "LLM latency heatmap (seconds)",
+        "id": 9,
+        "gridPos": { "x": 12, "y": 12, "w": 12, "h": 6 },
+        "options": { "legend": { "show": true }, "color": { "mode": "palette-classic" } },
+        "targets": [
+          { "expr": "sum by (le) (rate(http_request_duration_highr_seconds_bucket{job=\"llm\"}[$__rate_interval]))" }
+        ]
+      },
+  
+      {
+        "type": "table",
+        "title": "Top slow backend routes (p95 ms)",
+        "id": 10,
+        "gridPos": { "x": 0, "y": 18, "w": 12, "h": 7 },
+        "transformations": [
+          { "id": "organize", "options": { "excludeByName": {}, "indexByName": {}, "renameByName": { "Value": "p95_ms" } } },
+          { "id": "sortBy", "options": { "fields": {}, "sort": [ { "field": "p95_ms", "desc": true } ] } },
+          { "id": "limit", "options": { "limit": 10 } }
+        ],
+        "fieldConfig": { "defaults": { "unit": "ms" } },
+        "targets": [
+          { "expr": "1000 * histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"backend\"}[$__rate_interval])) by (le, route))" }
+        ]
+      },
+      {
+        "type": "table",
+        "title": "Backend 5xx by route (req/s)",
+        "id": 11,
+        "gridPos": { "x": 12, "y": 18, "w": 12, "h": 7 },
+        "transformations": [
+          { "id": "organize", "options": { "excludeByName": {}, "indexByName": {}, "renameByName": { "Value": "err_rps" } } },
+          { "id": "sortBy", "options": { "sort": [ { "field": "err_rps", "desc": true } ] } },
+          { "id": "limit", "options": { "limit": 10 } }
+        ],
+        "fieldConfig": { "defaults": { "unit": "ops" } },
+        "targets": [
+          { "expr": "sum(rate(http_request_duration_seconds_count{job=\"backend\",code=~\"5..\"}[$__rate_interval])) by (route)" }
+        ]
+      },
+  
+      {
+        "type": "timeseries",
+        "title": "Backend CPU & Memory",
+        "id": 12,
+        "gridPos": { "x": 0, "y": 25, "w": 12, "h": 7 },
+        "targets": [
+          { "expr": "rate(process_cpu_seconds_total{job=\"backend\"}[$__rate_interval])", "legendFormat": "cpu (cores)" },
+          { "expr": "process_resident_memory_bytes{job=\"backend\"}", "legendFormat": "rss (bytes)" }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "LLM CPU & Memory",
+        "id": 13,
+        "gridPos": { "x": 12, "y": 25, "w": 12, "h": 7 },
+        "targets": [
+          { "expr": "rate(process_cpu_seconds_total{job=\"llm\"}[$__rate_interval])", "legendFormat": "cpu (cores)" },
+          { "expr": "process_resident_memory_bytes{job=\"llm\"}", "legendFormat": "rss (bytes)" }
+        ]
+      }
+    ]
+  }
+  
